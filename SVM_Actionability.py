@@ -271,7 +271,8 @@ def calculate_rbf_dual_vector(x_i, svm, gamma):
     for j in range(0, len(svm.support_vectors_)):
         dual_coef = svm.dual_coef_[0][j]
         support_vector = svm.support_vectors_[j]
-        dual_vector = np.add(dual_vector, dual_coef * (x_i - support_vector) * calculate_rbf(x_i, support_vector, gamma))
+        dual_vector = np.add(dual_vector, dual_coef *
+                             2 * gamma * (x_i - support_vector) * calculate_rbf(x_i, support_vector, gamma))
 
     return dual_vector
 
@@ -280,11 +281,11 @@ def rbf_lambda_var(x_i, w, x_0, svm, gamma):
     dual_vector = calculate_rbf_dual_vector(x_i, svm, gamma)
     num = 2 * np.matmul(dual_vector.T, np.multiply(w, x_0 - x_i))
     denom = np.matmul(dual_vector.T, dual_vector)
-    return -num/denom
+    return num/denom
 
 # Calculate RBF Gradient
 def rbf_lagrangian_grad(x_i, w, x_0, svm, gamma):
-    term_1 = 2 * np.multiply(w, x_0 - x_i)
+    term_1 = - 2 * np.multiply(w, x_0 - x_i)
     lambda_val = rbf_lambda_var(x_i, w, x_0, svm, gamma)
     summation_val = calculate_rbf_dual_vector(x_i, svm, gamma)
     term_2 = lambda_val * summation_val
@@ -307,11 +308,11 @@ def poly_lambda_var(x_i, w, x_0, svm, degree):
     dual_vector = calculate_poly_dual_vector(x_i, svm, degree)
     num = 2 * np.matmul(dual_vector.T, np.multiply(w, x_0 - x_i))
     denom = np.matmul(dual_vector.T, dual_vector)
-    return -num/denom
+    return num/denom
 
 # Calculate Polynomial Gradient
 def poly_lagrangian_grad(x_i, w, x_0, svm, degree):
-    term_1 = 2 * np.multiply(w, x_0 - x_i)
+    term_1 = - 2 * np.multiply(w, x_0 - x_i)
     lambda_val = poly_lambda_var(x_i, w, x_0, svm, degree)
     summation_val = calculate_poly_dual_vector(x_i, svm, degree)
     term_2 = lambda_val * summation_val
@@ -328,9 +329,9 @@ def find_nearest_nonlinear_point(x_0, svm, weights, x_1,
     while unweighted_distance(x_i, x_i_plus_1) > stopping_distance:
         x_i = x_i_plus_1
         if method == 'rbf':
-            x_i_plus_1 = x_i + eta * rbf_lagrangian_grad(x_i, weights, x_0, svm, gamma)
+            x_i_plus_1 = x_i - eta * rbf_lagrangian_grad(x_i, weights, x_0, svm, gamma)
         elif method == 'poly':
-            x_i_plus_1 = x_i + eta * poly_lagrangian_grad(x_i, weights, x_0, svm, degree)
+            x_i_plus_1 = x_i - eta * poly_lagrangian_grad(x_i, weights, x_0, svm, degree)
 
         num_iterations += 1
 
