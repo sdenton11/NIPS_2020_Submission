@@ -833,15 +833,17 @@ def run_atherosclerosis_data():
 
     print("Number of Points: {}".format(len(grad_distances)))
 
-    # Plot the feature changes
+    # Plot/save the feature changes, to use interpretability (i.e. amplitudes) change the weight vectors to all 1's
     feature_changes = pd.DataFrame(columns=['Feature', 'avgGradMove', 'avgSVMove', 'varGradMove', 'varSVMove',
-                                            'maxValue', 'minValue'])
+                                            'maxValue', 'minValue', 'amplitudeMean', 'amplitudeMedian'])
 
     for i in range(0, len(num_cols)):
+    normalized_amplitude = abs(grad_changes[:, i])/(min_max_scaler.data_max_[i] - min_max_scaler.data_min_[i])
         row = {'Feature': num_cols[i], 'avgGradMove': np.mean(grad_changes[:, i]),
                'avgSVMove': np.mean(sv_changes[:, i]), 'varGradMove': np.var(grad_changes[:, i]),
                'varSVMove': np.var(sv_changes[:, i]), 'maxValue': min_max_scaler.data_max_[i],
-               'minValue': min_max_scaler.data_min_[i]}
+               'minValue': min_max_scaler.data_min_[i], 'amplitudeMean': np.mean(normalized_amplitude),
+               'amplitudeMedian': np.median(normalized_amplitude)}
 
         feature_changes = feature_changes.append(row, ignore_index=True)
 
