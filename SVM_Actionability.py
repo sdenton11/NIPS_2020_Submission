@@ -15,6 +15,8 @@ import pandas as pd
 import time
 import math
 import random
+import argparse
+import sys
 
 
 h = .02  # step size in the mesh
@@ -93,7 +95,7 @@ def find_nearest_sv(x_0, svm, weights, goal):
     return sv, nearest_distance
 
 # This function compares the Gradient Descent and Nearest Support Vector
-def run_linear_algo(x_0, y_0, coefs, weights, svm):
+def run_linear_algo(x_0, y_0, coefs, weights, svm, graph_examples):
     goal = -y_0
 
     # Set the default y value if x is 0 for x_1
@@ -115,26 +117,25 @@ def run_linear_algo(x_0, y_0, coefs, weights, svm):
     y_pos = (1 - coefs[0] * x) / coefs[1]
     y_neg = (-1 - coefs[0] * x) / coefs[1]
 
-    """
-    fig, ax = plt.subplots()
-    col_0 = 'b' if y_0 == 1 else 'r'
-    col_1 = 'r' if y_0 == 1 else 'b'
-    ax.plot(x, y, '-k') #, label='{0:.2f}x + {1:.2f}y = 0'.format(coefs[0], coefs[1]))
-    ax.plot(x, y_pos, 'b--', label='positive margin')
-    ax.plot(x, y_neg, 'r--', label='negative margin')
-    ax.plot(x_0[0], x_0[1], col_0 + 'o', label='x_0 label')
-    print(x_1)
-    ax.plot(x_1[0], x_1[1], 'k^')
-    ax.plot(nearest_grad[0], nearest_grad[1], col_1 + 'o', label='gradient descent solution')
-    plt.ylim([-1, 1])
-    plt.title(
-        '2D Action with Weight Vector [{0:.3f}, {1:.3f}], {2:.0f} iterations'.format(weights[0], weights[1], num_iter))
-    plt.xlabel('x', color='#1C2833')
-    plt.ylabel('y', color='#1C2833')
-    plt.legend()
-    plt.grid()
-    plt.show()
-    """
+    if graph_examples:
+        fig, ax = plt.subplots()
+        col_0 = 'b' if y_0 == 1 else 'r'
+        col_1 = 'r' if y_0 == 1 else 'b'
+        ax.plot(x, y, '-k') #, label='{0:.2f}x + {1:.2f}y = 0'.format(coefs[0], coefs[1]))
+        ax.plot(x, y_pos, 'b--', label='positive margin')
+        ax.plot(x, y_neg, 'r--', label='negative margin')
+        ax.plot(x_0[0], x_0[1], col_0 + 'o', label='x_0 label')
+        print(x_1)
+        ax.plot(x_1[0], x_1[1], 'k^')
+        ax.plot(nearest_grad[0], nearest_grad[1], col_1 + 'o', label='gradient descent solution')
+        plt.ylim([-1, 1])
+        plt.title(
+            '2D Action with Weight Vector [{0:.3f}, {1:.3f}], {2:.0f} iterations'.format(weights[0], weights[1], num_iter))
+        plt.xlabel('x', color='#1C2833')
+        plt.ylabel('y', color='#1C2833')
+        plt.legend()
+        plt.grid()
+        plt.show()
 
     # Measure the nearest support vector
     nearest_sv, nearest_sv_distance = find_nearest_sv(x_0, svm, weights, goal)
@@ -142,7 +143,8 @@ def run_linear_algo(x_0, y_0, coefs, weights, svm):
     return grad_dist, nearest_sv_distance, grad_run_time
 
 # Run the linear SVM algorithm
-def run_linear_svm(weights = np.asarray([1, 0.1]), result_dir='', num_points=1000):
+def run_linear_svm(weights = np.asarray([1, 0.1]), result_dir='', num_points=1000, summary_results=True,
+                   graph_examples=False):
     # Create the data and define the weights
     X, y, coefs, svm = create_linear_svm(num_points)
 
@@ -156,7 +158,7 @@ def run_linear_svm(weights = np.asarray([1, 0.1]), result_dir='', num_points=100
         x_0 = X[i, :]
         y_0 = y[i]
         grad_dist, nearest_sv_dist, grad_run_time = \
-            run_linear_algo(x_0, y_0, coefs, weights, svm)
+            run_linear_algo(x_0, y_0, coefs, weights, svm, graph_examples)
 
         grad_distances = np.append(grad_distances, grad_dist)
         nearest_sv_distances = np.append(nearest_sv_distances, nearest_sv_dist)
@@ -164,24 +166,23 @@ def run_linear_svm(weights = np.asarray([1, 0.1]), result_dir='', num_points=100
         grad_times = np.append(grad_times, grad_run_time)
 
     # The commented out code below saves information on the linear SVM
-    """
-    print("Statistics on Gradient Descent Prediction Run Time. Average: {}s, Max: {}s, Min: {}s"
-          .format(np.mean(grad_times), max(grad_times), min(grad_times)))
+    if summary_results:
+        print("Statistics on Gradient Descent Prediction Run Time. Average: {}s, Max: {}s, Min: {}s"
+              .format(np.mean(grad_times), max(grad_times), min(grad_times)))
 
-    # Create a boxplot of the Distance Data
-    distance_data = [grad_distances, nearest_sv_distances]
-    plt.boxplot(distance_data)
-    plt.title("Normalized Weighted Distance from Solution to Initial Point")
-    plt.xticks([1, 2], ['Gradient Descent', 'Nearest Support Vector'])
-    plt.savefig(result_dir + 'linear_distances_boxplot.png')
-    plt.close()
+        # Create a boxplot of the Distance Data
+        distance_data = [grad_distances, nearest_sv_distances]
+        plt.boxplot(distance_data)
+        plt.title("Normalized Weighted Distance from Solution to Initial Point")
+        plt.xticks([1, 2], ['Gradient Descent', 'Nearest Support Vector'])
+        plt.savefig(result_dir + 'linear_distances_boxplot.png')
+        plt.close()
 
-    t_val, p_val = st.ttest_ind(grad_distances, nearest_sv_distances)
-    print("Gradient Descent Average Distance {:.3f}".format(np.mean(grad_distances)))
-    print("Nearest SV Average Distance {:.3f}".format(np.mean(nearest_sv_distances)))
-    print("One sided p-val of Significance is: {:4f}".format(p_val / 2))
-    print(t_val)
-    """
+        t_val, p_val = st.ttest_ind(grad_distances, nearest_sv_distances)
+        print("Gradient Descent Average Distance {:.3f}".format(np.mean(grad_distances)))
+        print("Nearest SV Average Distance {:.3f}".format(np.mean(nearest_sv_distances)))
+        print("One sided p-val of Significance is: {:4f}".format(p_val / 2))
+        print(t_val)
 
 # Create nonlinear datasets
 def create_nonlinear_data(num_points, type='moon'):
@@ -317,7 +318,7 @@ def find_nearest_nonlinear_point(x_0, svm, weights, x_1,
     return x_i_plus_1, num_iterations
 
 # Run the algorithm for a nonlinear point
-def run_nonlinear_algo(x_0, y_0, weights, svm, xx, yy, Z, method='rbf'):
+def run_nonlinear_algo(x_0, y_0, weights, svm, xx, yy, Z, method='rbf', graph_examples=False):
     goal = -y_0
 
     # Set a goal point
@@ -331,40 +332,40 @@ def run_nonlinear_algo(x_0, y_0, weights, svm, xx, yy, Z, method='rbf'):
     grad_desc_distance = distance(nearest_gd, x_0, weights)
 
     # The below code will graph the result
-    """
-    fig, ax = plt.subplots()
-    cm_bright = ListedColormap(['#FF0000', '#FFFFFF', '#0000FF'])
+    if graph_examples:
+        fig, ax = plt.subplots()
+        cm_bright = ListedColormap(['#FF0000', '#FFFFFF', '#0000FF'])
 
-    ax.contourf(xx, yy, Z, cmap=cm_bright, alpha=.5)
+        ax.contourf(xx, yy, Z, cmap=cm_bright, alpha=.5)
 
-    plt.xlabel('x_1', color='#1C2833')
-    plt.ylabel('x_2', color='#1C2833')
-
-
-    col_0 = 'b' if y_0 == 1 else 'r'
-    col_1 = 'r' if y_0 == 1 else 'b'
-    ax.plot(x_0[0], x_0[1], col_0 + 'o', label='x_0 label')
-    ax.plot(x_1[0], x_1[1], 'k^', label='x_1')
-    ax.plot(nearest_gd[0], nearest_gd[1], col_1 + 'o',
-            label='nearest grad descent (iterations: {})'.format(num_iter))
-    ax.plot(nearest_sv[0], nearest_sv[1], col_1 + 's',
-            label='nearest SV')
+        plt.xlabel('x_1', color='#1C2833')
+        plt.ylabel('x_2', color='#1C2833')
 
 
-    plt.title('2D Action with Weight Vector [{0:.3f}, {1:.3f}], \n Grad Descent Distance - Nearest SV Distance: {2:.0f}'
-              .format(weights[0], weights[1], grad_desc_distance - nearest_sv_distance))
-    plt.xlabel('x', color='#1C2833')
-    plt.ylabel('y', color='#1C2833')
-    plt.legend()
-    plt.grid()
-    plt.show()
-    """
+        col_0 = 'b' if y_0 == 1 else 'r'
+        col_1 = 'r' if y_0 == 1 else 'b'
+        ax.plot(x_0[0], x_0[1], col_0 + 'o', label='x_0 label')
+        ax.plot(x_1[0], x_1[1], 'k^', label='x_1')
+        ax.plot(nearest_gd[0], nearest_gd[1], col_1 + 'o',
+                label='nearest grad descent (iterations: {})'.format(num_iter))
+        ax.plot(nearest_sv[0], nearest_sv[1], col_1 + 's',
+                label='nearest SV')
+
+
+        plt.title('2D Action with Weight Vector [{0:.3f}, {1:.3f}], \n Grad Descent Distance - Nearest SV Distance: {2:.0f}'
+                  .format(weights[0], weights[1], grad_desc_distance - nearest_sv_distance))
+        plt.xlabel('x', color='#1C2833')
+        plt.ylabel('y', color='#1C2833')
+        plt.legend()
+        plt.grid()
+        plt.show()
 
 
     return grad_desc_distance, nearest_sv_distance, run_time
 
 # Run a nonlinear algorithm
-def run_nonlinear_svm(weights = np.asarray([1, 0.2]), result_dir='', num_points=100, data_type='moon', svm_type='rbf'):
+def run_nonlinear_svm(weights = np.asarray([1, 0.2]), result_dir='', num_points=100, data_type='moon', svm_type='rbf',
+                      summary_results=True, graph_examples=False):
     # Define the data and SVM
     X, y = create_nonlinear_data(num_points, type=data_type)
 
@@ -390,36 +391,37 @@ def run_nonlinear_svm(weights = np.asarray([1, 0.2]), result_dir='', num_points=
 
         if goal == 1:
             grad_dist, svm_dist, grad_time = run_nonlinear_algo(x_0=x_0, y_0=y_0, weights=weights, svm=svm,
-                                                                xx=xx, yy=yy, Z=Z, method=svm_type)
+                                                                xx=xx, yy=yy, Z=Z, method=svm_type,
+                                                                graph_examples=graph_examples)
 
 
         else:
             grad_dist, svm_dist, grad_time = run_nonlinear_algo(x_0=x_0, y_0=y_0, weights=weights, svm=svm,
-                                                                xx=xx, yy=yy, Z=Z, method=svm_type)
+                                                                xx=xx, yy=yy, Z=Z, method=svm_type,
+                                                                graph_examples=graph_examples)
 
         grad_distances.append(grad_dist)
         nearest_svm_distances.append(svm_dist)
         grad_times.append(grad_time)
 
     # The below code will print information about the gradient descent algo
-    """
-    print("Statistics on Gradient Descent Prediction Run Time. Average: {}s, Max: {}s, Min: {}s"
-          .format(np.mean(grad_times), max(grad_times), min(grad_times)))
+    if summary_results:
+        print("Statistics on Gradient Descent Prediction Run Time. Average: {}s, Max: {}s, Min: {}s"
+              .format(np.mean(grad_times), max(grad_times), min(grad_times)))
 
-    # Create a boxplot of the Distance Data
-    distance_data = [grad_distances, nearest_svm_distances]
-    plt.boxplot(distance_data)
-    plt.title("Normalized Weighted Distance from Solution to Initial Point")
-    plt.xticks([1, 2], ['Gradient Descent', 'Nearest Support Vector'])
-    plt.savefig(result_dir + 'distances_boxplot.png')
-    plt.close()
+        # Create a boxplot of the Distance Data
+        distance_data = [grad_distances, nearest_svm_distances]
+        plt.boxplot(distance_data)
+        plt.title("Normalized Weighted Distance from Solution to Initial Point")
+        plt.xticks([1, 2], ['Gradient Descent', 'Nearest Support Vector'])
+        plt.savefig(result_dir + 'distances_boxplot.png')
+        plt.close()
 
-    t_val, p_val = st.ttest_ind(grad_distances, nearest_svm_distances)
-    print("Gradient Descent Average Distance {:.3f}".format(np.mean(grad_distances)))
-    print("Nearest SV Average Distance {:.3f}".format(np.mean(nearest_svm_distances)))
-    print("One sided p-val of Significance is: {:4f}".format(p_val / 2))
-    print(t_val)
-    """
+        t_val, p_val = st.ttest_ind(grad_distances, nearest_svm_distances)
+        print("Gradient Descent Average Distance {:.3f}".format(np.mean(grad_distances)))
+        print("Nearest SV Average Distance {:.3f}".format(np.mean(nearest_svm_distances)))
+        print("One sided p-val of Significance is: {:4f}".format(p_val / 2))
+        print(t_val)
 
 # Create the atherosclerosis_dataset
 def create_atherosclerosis_data(filename, sheetname, x_cols, y_col):
@@ -682,7 +684,8 @@ def run_atherosclerosis_algo(x_0, y_0, weights, svm, gamma, degree, method='poly
     return grad_desc_distance, nearest_sv_distance, nearest_gd, nearest_sv, run_time
 
 # Test the Atherosclerosis Dataset
-def run_atherosclerosis_data(weights=[1, 1, .5, .5, .5, .2, .2, .1, .05, .05], result_dir='', svm_type='rbf'):
+def run_atherosclerosis_data(weights=[1, 1, .5, .5, .5, .2, .2, .1, .05, .05], result_dir='', svm_type='rbf',
+                             summary_results=True):
     num_cols = ['SUBSC', 'TRIC', 'TRIGL', 'SYST', 'DIAST',
                 'BMI', 'WEIGHT', 'CHLST', 'ALCO_CONS', 'TOBA_CONSO']
     y_col = 'SUPER_GROU'
@@ -693,14 +696,14 @@ def run_atherosclerosis_data(weights=[1, 1, .5, .5, .5, .2, .2, .1, .05, .05], r
     lm = create_linear_model(imputed_X, risk)
 
     # Print the regression information below
-    """
-    regression_info = {'R^2 value': [lm.score(imputed_X, risk)]}
-    for i in range(0, len(num_cols)):
-        regression_info[num_cols[i]] = [lm.coef_[i]]
-    regression_info['Intercept'] = [lm.intercept_]
-    regression_df = pd.DataFrame.from_dict(regression_info)
-    print(regression_df)
-    """
+    if summary_results:
+        print("Linear regression of risk summary:")
+        regression_info = {'R^2 value': [lm.score(imputed_X, risk)]}
+        for i in range(0, len(num_cols)):
+            regression_info[num_cols[i]] = [lm.coef_[i]]
+        regression_info['Intercept'] = [lm.intercept_]
+        regression_df = pd.DataFrame.from_dict(regression_info)
+        print(regression_df)
 
     # Define the weights
     num_weights = weights
@@ -784,119 +787,174 @@ def run_atherosclerosis_data(weights=[1, 1, .5, .5, .5, .2, .2, .1, .05, .05], r
             grad_risk = np.append(grad_risk, lm.predict(grad_unscaled.reshape(1, -1)))
 
     # The below saves information about the atherosclerosis data
-    """
-    # Create random heat maps
-    create_heat_maps(grad_percents[:7], sv_percents[:7], num_cols, 1, result_dir)
-    create_heat_maps(grad_percents[100:107], sv_percents[100:107], num_cols, 2, result_dir)
-    create_heat_maps(grad_percents[200:207], sv_percents[200:207], num_cols, 3, result_dir)
+    if summary_results:
+        # Create random heat maps
+        create_heat_maps(grad_percents[:7], sv_percents[:7], num_cols, 1, result_dir)
+        create_heat_maps(grad_percents[100:107], sv_percents[100:107], num_cols, 2, result_dir)
+        create_heat_maps(grad_percents[200:207], sv_percents[200:207], num_cols, 3, result_dir)
 
-    # Plot risk of probability for nearest support vector
-    plt.plot(x_0_risk, nearest_sv_risk, 'ko', markersize=2)
-    x = np.linspace(1, 6, 1000)
-    decrease_prob = sum(x_0_risk > nearest_sv_risk) / len(x_0_risk)
-    plt.plot(x, x, 'k--')
-    plt.title('Risk (Probability of Decreased Risk is {:.4f})'.format(decrease_prob))
-    plt.xlabel('Risk at Initial Point')
-    plt.ylabel('Risk of Nearest SV')
-    plt.savefig(result_dir + 'unweighted_nearest_sv_risk.png')
-    plt.close()
-
-    # Plot risk of probability for gradient descent solution
-    plt.plot(x_0_risk, grad_risk, 'ko', markersize=2)
-    plt.plot(x, x, 'k--')
-    decrease_prob = sum(x_0_risk > grad_risk) / len(x_0_risk)
-    plt.title('Risk (Probability of Decreased Risk is {:.4f})'.format(decrease_prob))
-    plt.xlabel('Risk at Initial Point')
-    plt.ylabel('Risk of Grad Descent Solution')
-    plt.savefig(result_dir + 'unweighted_grad_descent_risk.png')
-    plt.close()
-
-    print("Statistics on Prediction Run Time. Average: {}s, Max: {}s, Min: {}s"
-          .format(np.mean(run_times), max(run_times), min(run_times)))
-
-    print("Number of Points: {}".format(len(grad_distances)))
-
-    # Plot/save the feature changes, to use interpretability (i.e. amplitudes) change the weight vectors to all 1's
-    feature_changes = pd.DataFrame(columns=['Feature', 'avgGradMove', 'avgSVMove', 'varGradMove', 'varSVMove',
-                                            'maxValue', 'minValue', 'amplitudeMean', 'amplitudeMedian'])
-
-    for i in range(0, len(num_cols)):
-        normalized_amplitude = abs(grad_changes[:, i])/(min_max_scaler.data_max_[i] - min_max_scaler.data_min_[i])
-        row = {'Feature': num_cols[i], 'avgGradMove': np.mean(grad_changes[:, i]),
-               'avgSVMove': np.mean(sv_changes[:, i]), 'varGradMove': np.var(grad_changes[:, i]),
-               'varSVMove': np.var(sv_changes[:, i]), 'maxValue': min_max_scaler.data_max_[i],
-               'minValue': min_max_scaler.data_min_[i], 'amplitudeMean': np.mean(normalized_amplitude),
-               'amplitudeMedian': np.median(normalized_amplitude)}
-
-        feature_changes = feature_changes.append(row, ignore_index=True)
-
-        # Create a box plot of the feature changes
-        feature_change_data = [grad_changes[:, i], sv_changes[:, i]]
-        plt.boxplot(feature_change_data)
-        plt.title("Action for Feature {} (Range: {}-{}) from Initial Point to Solution"
-                  .format(num_cols[i], min_max_scaler.data_min_[i], min_max_scaler.data_max_[i]))
-        plt.xticks([1, 2], ['Gradient Descent Solution', 'Nearest Support Vector'])
-        plt.savefig(result_dir + 'feature_changes_{}.png'.format(num_cols[i]))
+        # Plot risk of probability for nearest support vector
+        plt.plot(x_0_risk, nearest_sv_risk, 'ko', markersize=2)
+        x = np.linspace(1, 6, 1000)
+        decrease_prob = sum(x_0_risk > nearest_sv_risk) / len(x_0_risk)
+        plt.plot(x, x, 'k--')
+        plt.title('Risk (Probability of Decreased Risk is {:.4f})'.format(decrease_prob))
+        plt.xlabel('Risk at Initial Point')
+        plt.ylabel('Risk of Nearest SV')
+        plt.savefig(result_dir + 'unweighted_nearest_sv_risk.png')
         plt.close()
 
-    # Create a box plot of the two heaviest feature changes together
-    feature_change_data = [grad_changes[:, 0], grad_changes[:, 1], sv_changes[:, 0], sv_changes[:, 1]]
-    plt.boxplot(feature_change_data)
-    plt.title("Action for Features {}, {} from Initial Point to Solution".format(num_cols[0], num_cols[1]))
-    plt.xticks([1, 2, 3, 4], ['GD {}'.format(num_cols[0]),
-                              'GD {}'.format(num_cols[1]),
-                              'Nearest SV {}'.format(num_cols[0]),
-                              'Nearest SV {}'.format(num_cols[1])])
-    plt.savefig(result_dir + 'feature_changes_mixed_features.png')
-    plt.close()
+        # Plot risk of probability for gradient descent solution
+        plt.plot(x_0_risk, grad_risk, 'ko', markersize=2)
+        plt.plot(x, x, 'k--')
+        decrease_prob = sum(x_0_risk > grad_risk) / len(x_0_risk)
+        plt.title('Risk (Probability of Decreased Risk is {:.4f})'.format(decrease_prob))
+        plt.xlabel('Risk at Initial Point')
+        plt.ylabel('Risk of Grad Descent Solution')
+        plt.savefig(result_dir + 'unweighted_grad_descent_risk.png')
+        plt.close()
 
-    feature_changes.to_csv(result_dir + 'atherosclerosis_feature_change.csv')
+        print("Statistics on Prediction Run Time. Average: {}s, Max: {}s, Min: {}s"
+              .format(np.mean(run_times), max(run_times), min(run_times)))
 
-    print("Average probability of no risk for Grad Descent solution is {}".format(np.mean(grad_probs)))
-    print("Average probability of no risk for nearest SV solution is {}".format(np.mean(nearest_sv_probs)))
+        print("Number of Points: {}".format(len(grad_distances)))
 
-    t_val, p_val = st.ttest_ind(grad_distances, nearest_sv_distances)
-    print("Gradient Descent Average Distance {:.3f}".format(np.mean(grad_distances)))
-    print("Nearest SV Average Distance {:.3f}".format(np.mean(nearest_sv_distances)))
-    print("One sided p-val of Significance is: {:4f}".format(p_val / 2))
-    print(t_val)
+        # Plot/save the feature changes, to use interpretability (i.e. amplitudes) change the weight vectors to all 1's
+        feature_changes = pd.DataFrame(columns=['Feature', 'avgGradMove', 'avgSVMove', 'varGradMove', 'varSVMove',
+                                                'maxValue', 'minValue', 'amplitudeMean', 'amplitudeMedian'])
 
-    # Create a boxplot of the Distance Data
-    distance_data = [grad_distances, nearest_sv_distances]
-    plt.boxplot(distance_data)
-    plt.title("Normalized Weighted Distance from Solution to Initial Point")
-    plt.xticks([1, 2], ['Gradient Descent Solution', 'Nearest Support Vector'])
-    plt.savefig(result_dir + 'distances_boxplot.png')
-    plt.close()
+        for i in range(0, len(num_cols)):
+            normalized_amplitude = abs(grad_changes[:, i])/(min_max_scaler.data_max_[i] - min_max_scaler.data_min_[i])
+            row = {'Feature': num_cols[i], 'avgGradMove': np.mean(grad_changes[:, i]),
+                   'avgSVMove': np.mean(sv_changes[:, i]), 'varGradMove': np.var(grad_changes[:, i]),
+                   'varSVMove': np.var(sv_changes[:, i]), 'maxValue': min_max_scaler.data_max_[i],
+                   'minValue': min_max_scaler.data_min_[i], 'amplitudeMean': np.mean(normalized_amplitude),
+                   'amplitudeMedian': np.median(normalized_amplitude)}
 
-    # Create a histogram of the distance data
-    bins = np.linspace(0, 1, 100)
-    plt.hist(grad_distances, bins, alpha=0.5, label='Gradient Descent Solution')
-    plt.hist(nearest_sv_distances, bins, alpha=0.5, label='Nearest Support Vector')
-    plt.legend()
-    plt.savefig(result_dir + 'distances_histogram.png')
-    plt.title("Normalized Weighted Distance from Solution to Initial Point")
-    plt.close()
-    """
+            feature_changes = feature_changes.append(row, ignore_index=True)
+
+            # Create a box plot of the feature changes
+            feature_change_data = [grad_changes[:, i], sv_changes[:, i]]
+            plt.boxplot(feature_change_data)
+            plt.title("Action for Feature {} (Range: {}-{}) from Initial Point to Solution"
+                      .format(num_cols[i], min_max_scaler.data_min_[i], min_max_scaler.data_max_[i]))
+            plt.xticks([1, 2], ['Gradient Descent Solution', 'Nearest Support Vector'])
+            plt.savefig(result_dir + 'feature_changes_{}.png'.format(num_cols[i]))
+            plt.close()
+
+        # Create a box plot of the two heaviest feature changes together
+        feature_change_data = [grad_changes[:, 0], grad_changes[:, 1], sv_changes[:, 0], sv_changes[:, 1]]
+        plt.boxplot(feature_change_data)
+        plt.title("Action for Features {}, {} from Initial Point to Solution".format(num_cols[0], num_cols[1]))
+        plt.xticks([1, 2, 3, 4], ['GD {}'.format(num_cols[0]),
+                                  'GD {}'.format(num_cols[1]),
+                                  'Nearest SV {}'.format(num_cols[0]),
+                                  'Nearest SV {}'.format(num_cols[1])])
+        plt.savefig(result_dir + 'feature_changes_mixed_features.png')
+        plt.close()
+
+        feature_changes.to_csv(result_dir + 'atherosclerosis_feature_change.csv')
+
+        print("Average probability of no risk for Grad Descent solution is {}".format(np.mean(grad_probs)))
+        print("Average probability of no risk for nearest SV solution is {}".format(np.mean(nearest_sv_probs)))
+
+        t_val, p_val = st.ttest_ind(grad_distances, nearest_sv_distances)
+        print("Gradient Descent Average Distance {:.3f}".format(np.mean(grad_distances)))
+        print("Nearest SV Average Distance {:.3f}".format(np.mean(nearest_sv_distances)))
+        print("One sided p-val of Significance is: {:4f}".format(p_val / 2))
+        print(t_val)
+
+        # Create a boxplot of the Distance Data
+        distance_data = [grad_distances, nearest_sv_distances]
+        plt.boxplot(distance_data)
+        plt.title("Normalized Weighted Distance from Solution to Initial Point")
+        plt.xticks([1, 2], ['Gradient Descent Solution', 'Nearest Support Vector'])
+        plt.savefig(result_dir + 'distances_boxplot.png')
+        plt.close()
+
+        # Create a histogram of the distance data
+        bins = np.linspace(0, 1, 100)
+        plt.hist(grad_distances, bins, alpha=0.5, label='Gradient Descent Solution')
+        plt.hist(nearest_sv_distances, bins, alpha=0.5, label='Nearest Support Vector')
+        plt.legend()
+        plt.savefig(result_dir + 'distances_histogram.png')
+        plt.title("Normalized Weighted Distance from Solution to Initial Point")
+        plt.close()
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Perform SVM Actionability.')
+    parser.add_argument('command', metavar='C', choices=['linear', 'non-linear', 'atherosclerosis'],
+                        help='the type of SVM action to perform (\'linear\', \'non-linear\', or \'atheroslcerosis\').')
+    parser.add_argument('-w', '--weights', nargs='+', type=float,
+                        help='the weights (between 0 and 1) for the associated model (length of 2 for '
+                             'linear/non-linear, length of 10 for atherosclerosis).', default=None)
+    parser.add_argument('-r', '--result_dir',
+                        help='the directory to save the results to (default=\'\')', default='')
+    parser.add_argument('-n', '--num_points', type=int,
+                        help='the number of points to simulate (default: 100)', default=100)
+    parser.add_argument('-d', '--data_type', choices=['circle', 'moon'], default='moon',
+                        help='the type of data for the non-linear SVM.')
+    parser.add_argument('-svm', '--svm_type', choices=['rbf', 'poly'], default='rbf',
+                        help='the type of SVM for the non-linear SVM or atherosclerosis SVM.')
+    parser.add_argument('-S', '--summary', action='store_true',
+                        help='specify whether to save the summary of the results.')
+    parser.add_argument('-g', '--graph_examples', action='store_true',
+                        help='specify whether to graph each example point.')
 
-    # Run the Linear SVM with gradient descent and analytical solution, there are three optional arguments
-    # 1. the weights, 2. the directory for results and 3. the number of points
-    print("Running Linear SVM Model...")
-    run_linear_svm(weights = np.asarray([1, 0.1]), result_dir='', num_points=100)
 
-    # Run the Non-Linear SVM with gradient descent, there are five optional arguments
-    # 1. the weights, 2. the directory for results, 3. the number of points,
-    # 4. the type of data (moon or circle), and 5. the type of svm (rbf or poly).
-    print("Running Non-Linear SVM Model...")
-    run_nonlinear_svm(weights = np.asarray([1, 0.1]), result_dir='', num_points=100, data_type='circle',
-                      svm_type='poly')
+    args = parser.parse_args()
+    weights = args.weights
 
-    # Run the atherosclerosis testing
-    # Run the Atherosclerosis SVM with gradient descent, there are three optional arguments
-    # 1. the weights for the features:
-    # ['SUBSC', 'TRIC', 'TRIGL', 'SYST', 'DIAST', 'BMI', 'WEIGHT', 'CHLST', 'ALCO_CONS', 'TOBA_CONSO'],
-    # 2. the directory for results, 3. the type of svm (rbf or poly).
-    print("Running Atherosclerosis SVM Model...")
-    run_atherosclerosis_data(weights = [1, 1, .5, .5, .5, .2, .2, .1, .05, .05], result_dir='', svm_type='poly')
+
+    if args.command == 'linear':
+        # Run the Linear SVM with gradient descent and analytical solution, there are five optional arguments
+        # 1. the weights, 2. the directory for results, 3. the number of points, 4. save the summary of the results,
+        # and 5. graph each example point.
+        print("Running Linear SVM Model...")
+
+        if weights is None:
+            weights = np.asarray([1, 0.1])
+        if len(weights) != 2:
+            print("Invalid number of weights.")
+            parser.print_help(sys.stderr)
+            sys.exit(1)
+
+        print(weights)
+        run_linear_svm(weights=np.asarray(weights), result_dir=args.result_dir, num_points=args.num_points,
+                       summary_results=args.summary, graph_examples=args.graph_examples)
+
+    elif args.command == 'non-linear':
+        # Run the Non-Linear SVM with gradient descent, there are seven optional arguments
+        # 1. the weights, 2. the directory for results, 3. the number of points,
+        # 4. the type of data (moon or circle), 5. the type of svm (rbf or poly), 6. save the summary of the results,
+        # and 7. graph each example point.
+        print("Running Non-Linear SVM Model...")
+
+        if weights is None:
+            weights = np.asarray([1, 0.1])
+        if len(weights) != 2:
+            print("Invalid number of weights.")
+            parser.print_help(sys.stderr)
+            sys.exit(1)
+
+        run_nonlinear_svm(weights=np.asarray(weights), result_dir=args.result_dir, num_points=args.num_points,
+                          data_type=args.data_type, svm_type=args.svm_type,
+                          summary_results=args.summary, graph_examples=args.graph_examples)
+
+    elif args.command == 'atherosclerosis':
+        # Run the atherosclerosis testing
+        # Run the Atherosclerosis SVM with gradient descent, there are four optional arguments
+        # 1. the weights for the features:
+        # ['SUBSC', 'TRIC', 'TRIGL', 'SYST', 'DIAST', 'BMI', 'WEIGHT', 'CHLST', 'ALCO_CONS', 'TOBA_CONSO'],
+        # 2. the directory for results, 3. the type of svm (rbf or poly), and 4. save the summary of the results.
+        print("Running Atherosclerosis SVM Model...")
+
+        if weights is None:
+            weights = [1, 1, .5, .5, .5, .2, .2, .1, .05, .05]
+        if len(weights) != 10:
+            print("Invalid number of weights.")
+            parser.print_help(sys.stderr)
+            sys.exit(1)
+
+        run_atherosclerosis_data(weights=weights, result_dir=args.result_dir, svm_type=args.svm_type,
+                                 summary_results=args.summary)
