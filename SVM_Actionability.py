@@ -883,11 +883,13 @@ if __name__ == "__main__":
 
     # Run the Linear SVM with gradient descent and analytical solution, there are three optional arguments
     # 1. the weights, 2. the directory for results and 3. the number of points
+    print("Running Linear SVM Model...")
     run_linear_svm(weights = np.asarray([1, 0.1]), result_dir='', num_points=100)
 
     # Run the Non-Linear SVM with gradient descent, there are five optional arguments
     # 1. the weights, 2. the directory for results, 3. the number of points,
     # 4. the type of data (moon or circle), and 5. the type of svm (rbf or poly).
+    print("Running Non-Linear SVM Model...")
     run_nonlinear_svm(weights = np.asarray([1, 0.1]), result_dir='', num_points=100, data_type='circle',
                       svm_type='poly')
 
@@ -896,4 +898,5 @@ if __name__ == "__main__":
     # 1. the weights for the features:
     # ['SUBSC', 'TRIC', 'TRIGL', 'SYST', 'DIAST', 'BMI', 'WEIGHT', 'CHLST', 'ALCO_CONS', 'TOBA_CONSO'],
     # 2. the directory for results, 3. the type of svm (rbf or poly).
+    print("Running Atherosclerosis SVM Model...")
     run_atherosclerosis_data(weights = [1, 1, .5, .5, .5, .2, .2, .1, .05, .05], result_dir='', svm_type='poly')
