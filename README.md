@@ -65,8 +65,8 @@ optional arguments:
 ```
 
 Here are examples for each of the three commands:
-**linear**: `python SVM_Actionability.py linear -w 1 0.2 -r results/ -n 123 -S -g`
+**linear**: `python3 SVM_Actionability.py linear -w 1 0.2 -r results/ -n 123 -S -g`
 
-**non-linear**: `python SVM_Actionability.py non-linear -w 1 0.2 -r results/ -n 123 -d circle -svm poly -S -g`
+**non-linear**: `python3 SVM_Actionability.py non-linear -w 1 0.2 -r results/ -n 123 -d circle -svm poly -S -g`
 
-**atherosclerosis**: `python SVM_Actionability.py atherosclerosis -w 1 1 0.01 1 0.75 0.3 1 0.8 0.01 0.2 -r results/ -svm rbf -S`
+**atherosclerosis**: `python3 SVM_Actionability.py atherosclerosis -w 1 1 0.01 1 0.75 0.3 1 0.8 0.01 0.2 -r results/ -svm rbf -S`
