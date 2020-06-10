@@ -65,7 +65,7 @@ optional arguments:
 ```
 
 Here are examples for each of the three commands:
-**linear**: `python3 SVM_Actionability.py linear -w 1 0.2 -r results/ -n 123 -S -g`
+**linear**: `python3 SVM_Actionability.py linear -w 1 0.5 -r results/ -n 123 -S -g`
 
 **non-linear**: `python3 SVM_Actionability.py non-linear -w 1 0.2 -r results/ -n 123 -d circle -svm poly -S -g`
 
