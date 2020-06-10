@@ -779,8 +779,14 @@ def run_atherosclerosis_data(weights=[1, 1, .5, .5, .5, .2, .2, .1, .05, .05], r
             grad_changes = np.append(grad_changes, np.array([grad_unscaled - x_0_unscaled]), axis=0)
             sv_changes = np.append(sv_changes, np.array([sv_unscaled - x_0_unscaled]), axis=0)
 
-            grad_percents = np.append(grad_percents, np.divide([grad_unscaled - x_0_unscaled], x_0_unscaled), axis=0)
-            sv_percents = np.append(sv_percents, np.divide([sv_unscaled - x_0_unscaled], x_0_unscaled), axis=0)
+            with np.errstate(divide='raise'):
+                try:
+                    grad_percents = np.append(grad_percents,
+                                              np.divide([grad_unscaled - x_0_unscaled], x_0_unscaled), axis=0)
+                    sv_percents = np.append(sv_percents, np.divide([sv_unscaled - x_0_unscaled], x_0_unscaled), axis=0)
+
+                except FloatingPointError:
+                    print("Unable to calculate percent change for patient {}".format(i))
 
             x_0_risk = np.append(x_0_risk, lm.predict(x_0_unscaled.reshape(1, -1)))
             nearest_sv_risk = np.append(nearest_sv_risk, lm.predict(sv_unscaled.reshape(1, -1)))
