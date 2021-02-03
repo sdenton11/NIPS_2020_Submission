@@ -964,3 +964,22 @@ if __name__ == "__main__":
 
         run_atherosclerosis_data(weights=weights, result_dir=args.result_dir, svm_type=args.svm_type,
                                  summary_results=args.summary)
+
+
+    elif args.command == 'credit':
+        # Run the credit testing
+        # Run the Credit SVM with gradient descent, there are four optional arguments
+        # 1. the weights for the features:
+        # ['SUBSC', 'TRIC', 'TRIGL', 'SYST', 'DIAST', 'BMI', 'WEIGHT', 'CHLST', 'ALCO_CONS', 'TOBA_CONSO'],
+        # 2. the directory for results, 3. the type of svm (rbf or poly), and 4. save the summary of the results.
+        print("Running Credit SVM Model...")
+
+        if weights is None:
+            weights = [1, 1, .5, .5, .5, .2, .2, .1, .05, .05]
+        if len(weights) != 10:
+            print("Invalid number of weights.")
+            parser.print_help(sys.stderr)
+            sys.exit(1)
+
+        run_atherosclerosis_data(weights=weights, result_dir=args.result_dir, svm_type=args.svm_type,
+                                 summary_results=args.summary)
